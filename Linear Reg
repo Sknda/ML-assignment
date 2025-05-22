@@ -1,0 +1,186 @@
+import random
+
+def generate_synthetic_data(num_samples=100, slope=2, intercept=5, noise_level=10):
+    """
+    Generates synthetic data for linear regression.
+
+    Args:
+        num_samples (int): Number of data points to generate.
+        slope (float): The true slope of the linear relationship.
+        intercept (float): The true intercept of the linear relationship.
+        noise_level (float): The magnitude of random noise to add.
+
+    Returns:
+        tuple: Two lists, X (independent variable) and y (dependent variable).
+    """
+    X = [i for i in range(num_samples)]
+    y = []
+    for x_val in X:
+        noise = random.uniform(-noise_level, noise_level)
+        y_val = slope * x_val + intercept + noise
+        y.append(y_val)
+    return X, y
+
+def calculate_mean(data):
+    """Calculates the mean of a list of numbers."""
+    return sum(data) / len(data)
+
+def simple_linear_regression(X, y):
+    """
+    Implements simple linear regression from scratch using OLS formulas.
+
+    Args:
+        X (list): List of independent variable values.
+        y (list): List of dependent variable values.
+
+    Returns:
+        tuple: (beta_0, beta_1), the intercept and slope of the regression line.
+    """
+    if len(X) != len(y):
+        raise ValueError("X and y must have the same number of samples.")
+    if len(X) == 0:
+        raise ValueError("Input lists cannot be empty.")
+
+    n = len(X)
+    mean_X = calculate_mean(X)
+    mean_y = calculate_mean(y)
+
+    numerator = 0
+    denominator = 0
+
+    for i in range(n):
+        numerator += (X[i] - mean_X) * (y[i] - mean_y)
+        denominator += (X[i] - mean_X) ** 2
+
+    if denominator == 0:
+        raise ValueError("Cannot perform regression: denominator is zero (all X values are the same).")
+
+    beta_1 = numerator / denominator
+    beta_0 = mean_y - beta_1 * mean_X
+
+    return beta_0, beta_1
+
+def predict(X_new, beta_0, beta_1):
+    """
+    Makes predictions using the learned regression coefficients.
+
+    Args:
+        X_new (list or float): New independent variable values to predict for.
+        beta_0 (float): The intercept.
+        beta_1 (float): The slope.
+
+    Returns:
+        list or float: Predicted y values.
+    """
+    if isinstance(X_new, list):
+        return [beta_0 + beta_1 * x for x in X_new]
+    else:
+        return beta_0 + beta_1 * X_new
+
+def mean_squared_error(y_true, y_pred):
+    """
+    Calculates the Mean Squared Error (MSE).
+
+    Args:
+        y_true (list): Actual y values.
+        y_pred (list): Predicted y values.
+
+    Returns:
+        float: The Mean Squared Error.
+    """
+    if len(y_true) != len(y_pred):
+        raise ValueError("y_true and y_pred must have the same number of samples.")
+    
+    n = len(y_true)
+    if n == 0:
+        return 0.0 # Handle empty lists gracefully
+        
+    mse = sum([(y_true[i] - y_pred[i])**2 for i in range(n)]) / n
+    return mse
+
+def r_squared(y_true, y_pred):
+    """
+    Calculates the R-squared (coefficient of determination).
+
+    Args:
+        y_true (list): Actual y values.
+        y_pred (list): Predicted y values.
+
+    Returns:
+        float: The R-squared value.
+    """
+    if len(y_true) != len(y_pred):
+        raise ValueError("y_true and y_pred must have the same number of samples.")
+    
+    n = len(y_true)
+    if n == 0:
+        return 0.0 # Handle empty lists gracefully
+
+    mean_y_true = calculate_mean(y_true)
+    
+    # Total sum of squares
+    ss_total = sum([(y_true[i] - mean_y_true)**2 for i in range(n)])
+    
+    # Residual sum of squares
+    ss_residual = sum([(y_true[i] - y_pred[i])**2 for i in range(n)])
+
+    if ss_total == 0:
+        return 1.0 # If all y_true are the same, and model predicts them perfectly.
+    
+    r2 = 1 - (ss_residual / ss_total)
+    return r2
+
+# --- Main execution ---
+if __name__ == "__main__":
+    # 1. Generate Dataset
+    X, y = generate_synthetic_data(num_samples=100, slope=2.5, intercept=10, noise_level=20)
+    print("--- Synthetic Data Generated ---")
+    print(f"First 5 X values: {X[:5]}")
+    print(f"First 5 y values: {y[:5]}\n")
+
+    # 2. Implement Simple Linear Regression
+    try:
+        beta_0, beta_1 = simple_linear_regression(X, y)
+        print("--- Regression Model Trained ---")
+        print(f"Calculated Intercept (beta_0): {beta_0:.4f}")
+        print(f"Calculated Slope (beta_1): {beta_1:.4f}\n")
+
+        # 3. Make Predictions
+        y_predicted = predict(X, beta_0, beta_1)
+        print("--- Predictions ---")
+        print(f"First 5 Actual y values: {y[:5]}")
+        print(f"First 5 Predicted y values: {y_predicted[:5]}\n")
+
+        # Predict for a new single value
+        new_X_value = 105
+        predicted_y_single = predict(new_X_value, beta_0, beta_1)
+        print(f"Prediction for X = {new_X_value}: {predicted_y_single:.4f}\n")
+
+        # 4. Evaluate Model
+        mse = mean_squared_error(y, y_predicted)
+        r2 = r_squared(y, y_predicted)
+        
+        print("--- Model Evaluation ---")
+        print(f"Mean Squared Error (MSE): {mse:.4f}")
+        print(f"R-squared (R2): {r2:.4f}")
+
+    except ValueError as e:
+        print(f"Error: {e}")
+
+    # Optional: Plotting (requires matplotlib)
+    try:
+        import matplotlib.pyplot as plt
+
+        plt.figure(figsize=(10, 6))
+        plt.scatter(X, y, label='Actual Data', alpha=0.7)
+        plt.plot(X, y_predicted, color='red', label='Regression Line')
+        plt.xlabel('X (Independent Variable)')
+        plt.ylabel('y (Dependent Variable)')
+        plt.title('Simple Linear Regression (Implemented from Scratch)')
+        plt.legend()
+        plt.grid(True)
+        plt.show()
+    except ImportError:
+        print("\nMatplotlib not found. Skipping plotting.")
+    except NameError:
+        print("\nPlotting skipped due to error in model training.")
